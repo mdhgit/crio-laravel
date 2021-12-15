@@ -1,0 +1,28 @@
+{
+    "name": "mydiabeteshome/crio-laravel",
+    "description": "Package made specially to integrate CRIO API(s) with Laravel PHP",
+    "license": "MIT",
+    "version":"1.0.0",
+    "authors": [
+        {
+            "name": "Lynton",
+            "email": "lynton.dsouza@mydiabeteshome.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "guzzlehttp/guzzle": "6.5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mydiabeteshome\\Crio\\":"src/"
+        }
+    },
+    "extra": {
+        "laravel":{
+            "providers":[
+                "Mydiabeteshome\\Crio\\CrioServiceProvider"
+            ]
+        }
+    }
+}
