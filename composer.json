@@ -3,6 +3,7 @@
     "description": "Package made specially to integrate CRIO API(s) with Laravel PHP",
     "license": "MIT",
     "version":"1.0.0",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "Lynton",
