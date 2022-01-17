@@ -18,6 +18,7 @@ class Crio extends CrioServiceProvider{
         'procedures'=>[],
         'emergency_contacts'=>[]
     ];
+    private $patient_status=['DECEASED','DO_NOT_ENROLL','NO_CONTACT_INFO','DELETED','DO_NOT_SOLICT','AVAILABLE'];
 
     /**
      * Objective of the function is to initilize crio with requisite infomration
@@ -68,7 +69,6 @@ class Crio extends CrioServiceProvider{
                 curl_close($cURLConnection);
                 if(!empty($apiResponse)){
                     $apiResponse=json_decode($apiResponse);
-                    print_r($apiResponse);die;
                     if(empty($apiResponse->errors)){
                         if(!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message!='Unauthorized')){
                             return $apiResponse;

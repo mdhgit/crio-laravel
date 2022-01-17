@@ -7,12 +7,12 @@ use Illuminate\Support\ServiceProvider;
 class CrioServiceProvider extends ServiceProvider{
     
     public function boot(){
-        //dd('It works');
+
     }
 
     public function register(){
         $this->app->singleton(Crio::class,function(){
-            return new Crio('test','test');
+            return new Crio('client_id','bearer_token');
         });
     }
 }
