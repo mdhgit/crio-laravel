@@ -7,18 +7,20 @@ use Exception;
 // use GuzzleHttp\Client;
 // use GuzzleHttp\Exception\ClientException;
 
-class Crio extends CrioServiceProvider{
+class Crio extends CrioServiceProvider
+{
 
     private $client_id = null;
     private $bearer_token = null;
     private $api_url = null;
-    private $required_fields=['patient_details_create'=>['externalId','status','firstName','lastName','email'],
-        'patient_details_update'=>['externalId','status','firstName','lastName'],
-        'studies'=>['studyId','subjectStatus'],
-        'procedures'=>[],
-        'emergency_contacts'=>[]
+    private $required_fields = [
+        'patient_details_create' => ['externalId', 'status', 'firstName', 'lastName', 'email'],
+        'patient_details_update' => ['externalId', 'status', 'firstName', 'lastName'],
+        'studies' => ['studyId', 'subjectStatus'],
+        'procedures' => [],
+        'emergency_contacts' => []
     ];
-    private $patient_status=['DECEASED','DO_NOT_ENROLL','NO_CONTACT_INFO','DELETED','DO_NOT_SOLICT','AVAILABLE'];
+    private $patient_status = ['DECEASED', 'DO_NOT_ENROLL', 'NO_CONTACT_INFO', 'DELETED', 'DO_NOT_SOLICT', 'AVAILABLE'];
 
     /**
      * Objective of the function is to initilize crio with requisite infomration
@@ -49,14 +51,14 @@ class Crio extends CrioServiceProvider{
      * @param array $procedures
      * @param array $emergency_contacts
      */
-    public function createPatient($site_id,$patient_details,$studies=array(),$procedures=array(),$emergency_contacts=array())
+    public function createPatient($site_id, $patient_details, $studies = array(), $procedures = array(), $emergency_contacts = array())
     {
-        try{    
-            $site_id=(int)$site_id;
-            $patient_details_status=$this->validateFields('patient_details_create',$patient_details);
-            if(!empty($site_id) && $patient_details_status['status']==1){
-                $patient_data=$this->mapPatient($site_id,$patient_details);
-                $cURLConnection = curl_init($this->api_url.'/patient?client_id='.$this->client_id);
+        try {
+            $site_id = (int)$site_id;
+            $patient_details_status = $this->validateFields('patient_details_create', $patient_details);
+            if (!empty($site_id) && $patient_details_status['status'] == 1) {
+                $patient_data = $this->mapPatient($site_id, $patient_details);
+                $cURLConnection = curl_init($this->api_url . '/patient?client_id=' . $this->client_id);
                 curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($patient_data));
                 curl_setopt($cURLConnection, CURLOPT_POST, 1);
                 curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
@@ -67,32 +69,27 @@ class Crio extends CrioServiceProvider{
                 ));
                 $apiResponse = curl_exec($cURLConnection);
                 curl_close($cURLConnection);
-                if(!empty($apiResponse)){
-                    $apiResponse=json_decode($apiResponse);
-                    if(empty($apiResponse->errors)){
-                        if(!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message!='Unauthorized')){
+                if (!empty($apiResponse)) {
+                    $apiResponse = json_decode($apiResponse);
+                    if (empty($apiResponse->errors)) {
+                        if (!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message != 'Unauthorized')) {
                             return $apiResponse;
+                        } else {
+                            throw new Exception('Credentials provided to CRIO is invalid', 401);
                         }
-                        else{
-                            throw new Exception('Credentials provided to CRIO is invalid',401);
-                        }
+                    } else {
+                        throw new Exception('Patient id and/or site id is invalid', 500);
                     }
-                    else{
-                        throw new Exception('Patient id and/or site id is invalid',500);
-                    }
+                } else {
+                    throw new Exception('No data received from CRIO Server', 404);
                 }
-                else{
-                    throw new Exception('No data received from CRIO Server',404);
-                }
+            } else {
+                throw new Exception('Site ID or Patient Details not provided or not in correct format', 500);
             }
-            else{
-                throw new Exception('Site ID or Patient Details not provided or not in correct format',500);
-            }  
+        } catch (Exception $e) {
+            dd($e);
+            throw new Exception($e->getMessage(), 500);
         }
-        catch(Exception $e){ dd($e);
-            throw new Exception($e->getMessage(),500);
-        }
-               
     }
 
     /**
@@ -102,12 +99,13 @@ class Crio extends CrioServiceProvider{
      * @return array having patient details
      */
 
-    public function getPatient($site_id,$patient_id){
-        try{
-            $site_id=(int)$site_id;
-            $patient_id=(int)$patient_id;
-            if(!empty($site_id) && !empty($patient_id)){
-                $cURLConnection = curl_init($this->api_url."/patient/$patient_id/site/$site_id?client_id=".$this->client_id);
+    public function getPatient($site_id, $patient_id)
+    {
+        try {
+            $site_id = (int)$site_id;
+            $patient_id = (int)$patient_id;
+            if (!empty($site_id) && !empty($patient_id)) {
+                $cURLConnection = curl_init($this->api_url . "/patient/$patient_id/site/$site_id?client_id=" . $this->client_id);
                 curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array(
                     "Authorization: Bearer  $this->bearer_token",
@@ -116,30 +114,25 @@ class Crio extends CrioServiceProvider{
                 ));
                 $apiResponse = curl_exec($cURLConnection);
                 curl_close($cURLConnection);
-                if(!empty($apiResponse)){
-                    $apiResponse=json_decode($apiResponse);
-                    if(empty($apiResponse->errors)){
-                        if(!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message!='Unauthorized')){
+                if (!empty($apiResponse)) {
+                    $apiResponse = json_decode($apiResponse);
+                    if (empty($apiResponse->errors)) {
+                        if (!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message != 'Unauthorized')) {
                             return $apiResponse;
+                        } else {
+                            throw new Exception('Credentials provided to CRIO is invalid', 401);
                         }
-                        else{
-                            throw new Exception('Credentials provided to CRIO is invalid',401);
-                        }
+                    } else {
+                        throw new Exception('Patient id and/or site id is invalid', 500);
                     }
-                    else{
-                        throw new Exception('Patient id and/or site id is invalid',500);
-                    }
+                } else {
+                    throw new Exception('No data received from CRIO Server', 404);
                 }
-                else{
-                    throw new Exception('No data received from CRIO Server',404);
-                }
+            } else {
+                throw new Exception('Site Patient ID not provided or not in correct format', 500);
             }
-            else{
-                throw new Exception('Site Patient ID not provided or not in correct format',500);
-            }    
-        }
-        catch(Exception $e){
-            throw new Exception($e->getMessage(),500);
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage(), 500);
         }
     }
 
@@ -151,13 +144,14 @@ class Crio extends CrioServiceProvider{
      * @return array API response
      */
 
-    public function updatePatient($site_id,$patient_details,$patient_id){
-        try{    
-            $site_id=(int)$site_id;
-            $patient_details_status=$this->validateFields('patient_details_update',$patient_details);
-            if(!empty($site_id) && !empty($patient_id) && $patient_details_status['status']==1){
-                $patient_data=$this->mapPatient($site_id,$patient_details,$patient_id);
-                $cURLConnection = curl_init($this->api_url."/patient/{$patient_id}?client_id={$this->client_id}");
+    public function updatePatient($site_id, $patient_details, $patient_id)
+    {
+        try {
+            $site_id = (int)$site_id;
+            $patient_details_status = $this->validateFields('patient_details_update', $patient_details);
+            if (!empty($site_id) && !empty($patient_id) && $patient_details_status['status'] == 1) {
+                $patient_data = $this->mapPatient($site_id, $patient_details, $patient_id);
+                $cURLConnection = curl_init($this->api_url . "/patient/{$patient_id}?client_id={$this->client_id}");
                 curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "PUT");
                 curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($patient_data));
                 curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
@@ -168,33 +162,26 @@ class Crio extends CrioServiceProvider{
                 ));
                 $apiResponse = curl_exec($cURLConnection);
                 curl_close($cURLConnection);
-                if(!empty($apiResponse)){
-                    $apiResponse=json_decode($apiResponse);
-                    if(empty($apiResponse->errors)){
-                        if(!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message!='Unauthorized')){
+                if (!empty($apiResponse)) {
+                    $apiResponse = json_decode($apiResponse);
+                    if (empty($apiResponse->errors)) {
+                        if (!isset($apiResponse->message) || (isset($apiResponse->message) && $apiResponse->message != 'Unauthorized')) {
                             return $apiResponse;
+                        } else {
+                            throw new Exception('Credentials provided to CRIO is invalid', 401);
                         }
-                        else{
-                            throw new Exception('Credentials provided to CRIO is invalid',401);
-                        }
+                    } else {
+                        throw new Exception('Patient id and/or site id is invalid', 500);
                     }
-                    else{
-                        throw new Exception('Patient id and/or site id is invalid',500);
-                    }
+                } else {
+                    throw new Exception('No data received from CRIO Server', 404);
                 }
-                else{
-                    throw new Exception('No data received from CRIO Server',404);
-                }
+            } else {
+                throw new Exception('Site Patient ID not provided or not in correct format', 500);
             }
-            else{
-                throw new Exception('Site Patient ID not provided or not in correct format',500);
-            }  
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage(), 500);
         }
-        catch(Exception $e){
-            throw new Exception($e->getMessage(),500);
-        }
-
-        
     }
 
     /**
@@ -204,21 +191,22 @@ class Crio extends CrioServiceProvider{
      * @return array having status and message
      */
 
-    private function validateFields($key,$data){
-        $response=['status'=>1,'message'=>''];
-        switch($key){
+    private function validateFields($key, $data)
+    {
+        $response = ['status' => 1, 'message' => ''];
+        switch ($key) {
             case 'patient_details_create':
             case 'patient_details_update':
-                $mandatory_fields=$this->required_fields;
-                $mandatory_fields=$mandatory_fields[$key];
-                foreach($mandatory_fields as $mandatory){
-                    if(!array_key_exists($mandatory,$data)){
-                        $response['status']=0;
-                        $response['message']=$mandatory.' is required and does not exist';
+                $mandatory_fields = $this->required_fields;
+                $mandatory_fields = $mandatory_fields[$key];
+                foreach ($mandatory_fields as $mandatory) {
+                    if (!array_key_exists($mandatory, $data)) {
+                        $response['status'] = 0;
+                        $response['message'] = $mandatory . ' is required and does not exist';
                         return $response;
                     }
                 }
-            break;
+                break;
         }
         return $response;
     }
@@ -232,29 +220,28 @@ class Crio extends CrioServiceProvider{
      * @return array formatted array for CRIO
      */
 
-    private function mapPatient($site_id,$patient_details,$patient_id=null,$revision=null){
-        $patient_information=['patientId','externalId','birthDate','doNotCall','doNotEmail','doNotText','status','notes','gender','sex','dateCreated','lastUpdated','nin'];
-        $patient_contact_information=['firstName','middleName','lastName','address1','address2','email','homePhone','cellPhone','workPhone','state','city','postalCode','countryCode'];
-        $patient=['patientContact'=>array()];
-        foreach($patient_information as $pi){
-            if(array_key_exists($pi,$patient_details) && !empty($patient_details[$pi]))
-            {
-                $patient[$pi]=$patient_details[$pi];
+    private function mapPatient($site_id, $patient_details, $patient_id = null, $revision = null)
+    {
+        $patient_information = ['patientId', 'externalId', 'birthDate', 'doNotCall', 'doNotEmail', 'doNotText', 'status', 'notes', 'gender', 'sex', 'dateCreated', 'lastUpdated', 'nin'];
+        $patient_contact_information = ['firstName', 'middleName', 'lastName', 'address1', 'address2', 'email', 'homePhone', 'cellPhone', 'workPhone', 'state', 'city', 'postalCode', 'countryCode'];
+        $patient = ['patientContact' => array()];
+        foreach ($patient_information as $pi) {
+            if (array_key_exists($pi, $patient_details) && !empty($patient_details[$pi])) {
+                $patient[$pi] = $patient_details[$pi];
             }
         }
-        foreach($patient_contact_information as $pci){
-            if(array_key_exists($pci,$patient_details) && !empty($patient_details[$pci]))
-            {
-                $patient['patientContact'][$pci]=$patient_details[$pci];
+        foreach ($patient_contact_information as $pci) {
+            if (array_key_exists($pci, $patient_details) && !empty($patient_details[$pci])) {
+                $patient['patientContact'][$pci] = $patient_details[$pci];
             }
         }
-        if(!empty($patient_id)){
-            $patient['patientId']=$patient_id;
+        if (!empty($patient_id)) {
+            $patient['patientId'] = $patient_id;
         }
-        $final_data=[
-            'revision'=>$revision,
-            'siteId'=>$site_id,
-            'patientInfo'=>$patient
+        $final_data = [
+            'revision' => $revision,
+            'siteId' => $site_id,
+            'patientInfo' => $patient
         ];
         return $final_data;
     }
