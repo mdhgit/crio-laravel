@@ -87,7 +87,6 @@ class Crio extends CrioServiceProvider
                 throw new Exception('Site ID or Patient Details not provided or not in correct format', 500);
             }
         } catch (Exception $e) {
-            dd($e);
             throw new Exception($e->getMessage(), 500);
         }
     }
