@@ -269,7 +269,7 @@ class Crio extends CrioServiceProvider
                         $patient_data = array_merge($patient_data, $data);
                     }
                 }
-                return response()->json(['status' => 1, 'message' => 'Data formatted successfully', 'patient_data' => $patient_data, 'studies' => $studies, 'procedures' => $procedures, 'emergency_contacts' => $emergency_contacts,'external_id'=>$external_id]);
+                $response= ['status' => 1, 'message' => 'Data formatted successfully', 'patient_data' => $patient_data, 'studies' => $studies, 'procedures' => $procedures, 'emergency_contacts' => $emergency_contacts,'external_id'=>$external_id];
             }
         }
         return $response;
