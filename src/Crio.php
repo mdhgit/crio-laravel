@@ -211,6 +211,71 @@ class Crio extends CrioServiceProvider
     }
 
     /**
+     * Objective of the function is to format patient data
+     * @param int $patient_id id of patient (CRIO Primary Key)
+     * @param string $json having webhook input from crio
+     * @return
+     */
+    public function formatPatientData($patient_id, $json)
+    {
+        $response = ['status' => 0, 'message' => 'Patient ID or JSON was invalid'];
+        if (!empty($patient_id) && !empty($json)) {
+            $json = json_decode($json);
+            if (!empty($json)) {
+                $studies = [];
+                $procedures = [];
+                $emergency_contacts = [];
+                $external_id=null;
+                $patient_data = [
+                    'site_id' => $json->siteId,
+                    'revision' => $json->revision
+                ];
+                if (!empty($json->patientInfo)) {
+                    $patient_info = $json->patientInfo;
+                    $external_id=$patient_info->externalId;
+                    $data = [
+                        'patientId' => $patient_info->patientId,
+                        'externalId' => $patient_info->externalId,
+                        'birthDate' => !empty($patient_info->birthDate) ? date("Y-m-d", strtotime($patient_info->birthDate)) : '',
+                        'doNotCall' => $patient_info->doNotCall,
+                        'doNotEmail' => $patient_info->doNotEmail,
+                        'doNotText' => $patient_info->doNotText,
+                        'status' => $patient_info->status,
+                        'notes' => $patient_info->notes,
+                        'gender' => $patient_info->gender,
+                        'sex' => $patient_info->sex,
+                        'dateCreated' => !empty($patient_info->dateCreated) ? date('Y-m-d h:i:s', strtotime($patient_info->dateCreated)) : '',
+                        'lastUpdated' => !empty($patient_info->lastUpdated) ? date('Y-m-d h:i:s', strtotime($patient_info->lastUpdated)) : '',
+                        'nin' => $patient_info->nin
+                    ];
+                    $patient_data = array_merge($patient_data, $data);
+                    if (!empty($patient_info->patientContact)) {
+                        $patient_contact = $patient_info->patientContact;
+                        $data = [
+                            'firstName' => $patient_contact->firstName,
+                            'middleName' => $patient_contact->middleName,
+                            'lastName' => $patient_contact->lastName,
+                            'address1' => $patient_contact->address1,
+                            'address2' => $patient_contact->address2,
+                            'email' => $patient_contact->email,
+                            'homePhone' => $patient_contact->homePhone,
+                            'cellPhone' => $patient_contact->cellPhone,
+                            'workPhone' => $patient_contact->workPhone,
+                            'state' => $patient_contact->state,
+                            'city' => $patient_contact->city,
+                            'postalCode' => $patient_contact->postalCode,
+                            'countryCode' => $patient_contact->countryCode
+                        ];
+                        $patient_data = array_merge($patient_data, $data);
+                    }
+                }
+                return response()->json(['status' => 1, 'message' => 'Data formatted successfully', 'patient_data' => $patient_data, 'studies' => $studies, 'procedures' => $procedures, 'emergency_contacts' => $emergency_contacts,'external_id'=>$external_id]);
+            }
+        }
+        return $response;
+    }
+
+    /**
      * Objective of the function is map the linear data provided into CRIO accepted fields
      * @param int $site_id id of the site of crio
      * @param array $patient_details containing patient data
