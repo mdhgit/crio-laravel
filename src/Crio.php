@@ -17,7 +17,7 @@ class Crio extends CrioServiceProvider
         'patient_details_create' => ['externalId', 'status', 'firstName', 'lastName', 'email'],
         'patient_details_update' => ['externalId', 'status', 'firstName', 'lastName'],
         'studies' => ['studyId', 'subjectStatus'],
-        'procedures' => [],
+        'procedures' => ['procedureKey','questionKey','value'],
         'emergency_contacts' => []
     ];
     private $patient_status = ['DECEASED', 'DO_NOT_ENROLL', 'NO_CONTACT_INFO', 'DELETED', 'DO_NOT_SOLICT', 'AVAILABLE'];
@@ -56,8 +56,16 @@ class Crio extends CrioServiceProvider
         try {
             $site_id = (int)$site_id;
             $patient_details_status = $this->validateFields('patient_details_create', $patient_details);
+            $procedures=$this->validateFields('procedures',$procedures);
             if (!empty($site_id) && $patient_details_status['status'] == 1) {
-                $patient_data = $this->mapPatient($site_id, $patient_details);
+                if(!empty($procedures) && !empty($procedures['data'])){
+                    $procedures=$procedures['data'];
+                    $procedures=$this->mapProcedures($procedures);
+                }
+                else{
+                    $procedures=[];
+                }
+                $patient_data = $this->mapPatient($site_id, $patient_details,$studies,$procedures,$emergency_contacts);
                 $cURLConnection = curl_init($this->api_url . '/patient?client_id=' . $this->client_id);
                 curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($patient_data));
                 curl_setopt($cURLConnection, CURLOPT_POST, 1);
@@ -143,13 +151,22 @@ class Crio extends CrioServiceProvider
      * @return array API response
      */
 
-    public function updatePatient($site_id, $patient_details, $patient_id)
+    public function updatePatient($site_id, $patient_details, $patient_id, $studies = array(), $procedures = array(), $emergency_contacts = array())
     {
         try {
             $site_id = (int)$site_id;
             $patient_details_status = $this->validateFields('patient_details_update', $patient_details);
+            $procedures=$this->validateFields('procedures',$procedures);
             if (!empty($site_id) && !empty($patient_id) && $patient_details_status['status'] == 1) {
-                $patient_data = $this->mapPatient($site_id, $patient_details, $patient_id);
+                if(!empty($procedures) && !empty($procedures['data'])){
+                    $procedures=$procedures['data'];
+                    $procedures=$this->mapProcedures($procedures);
+                }
+                else{
+                    $procedures=[];
+                }
+                
+                $patient_data = $this->mapPatient($site_id, $patient_details, $studies, $procedures, $emergency_contacts, $patient_id);
                 $cURLConnection = curl_init($this->api_url . "/patient/{$patient_id}?client_id={$this->client_id}");
                 curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "PUT");
                 curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($patient_data));
@@ -193,11 +210,11 @@ class Crio extends CrioServiceProvider
     private function validateFields($key, $data)
     {
         $response = ['status' => 1, 'message' => ''];
+        $mandatory_fields = $this->required_fields;
+        $mandatory_fields = $mandatory_fields[$key];
         switch ($key) {
             case 'patient_details_create':
             case 'patient_details_update':
-                $mandatory_fields = $this->required_fields;
-                $mandatory_fields = $mandatory_fields[$key];
                 foreach ($mandatory_fields as $mandatory) {
                     if (!array_key_exists($mandatory, $data)) {
                         $response['status'] = 0;
@@ -206,8 +223,32 @@ class Crio extends CrioServiceProvider
                     }
                 }
                 break;
+            case 'procedures':
+                
+                foreach($data as $head){
+                    $counter=0;
+                    foreach($head['records'] as &$row){
+                        foreach($mandatory_fields as $mandatory){
+                            if(!array_key_exists($mandatory,$row)){
+                                unset($row[$counter]);
+                            }
+                        }
+                        $counter++;
+                    }
+                }
+                $response['data']=$data;
+
+            break;
         }
         return $response;
+    }
+
+    /**
+     * Objective of the function is to map procedure data and return in a formatted way
+     * @param 
+     */
+    private function formatProcedures($procedures_list){
+
     }
 
     /**
@@ -276,6 +317,31 @@ class Crio extends CrioServiceProvider
     }
 
     /**
+     * Objective of the function is to map procedures
+     * @param
+     * @return
+     */
+    function mapProcedures($procedures_list){
+        $procedures=[];
+        foreach($procedures_list as $row){
+            foreach($row['records'] as $procedure){
+               // if(!array_key_exists($procedure['procedureKey'],$procedures)){
+                //    $procedures[$procedure['procedureKey']]=array();
+               // }
+              //  else{
+                   // if(array_key_exists('records',$procedures[$procedure['procedureKey']]))
+                    $procedures[$procedure['procedureKey']]['records'][]['questions'][]=array('questionKey'=>$procedure['questionKey'],'value'=>$procedure['value']);
+               // }
+            }
+        }
+        $final_procedure=array();
+        foreach($procedures as $key=>$procedure){
+            $final_procedure[]=["procedureKey"=>$key,"records"=>$procedure['records']];
+        }
+        return $final_procedure;
+    }
+
+    /**
      * Objective of the function is map the linear data provided into CRIO accepted fields
      * @param int $site_id id of the site of crio
      * @param array $patient_details containing patient data
@@ -284,7 +350,7 @@ class Crio extends CrioServiceProvider
      * @return array formatted array for CRIO
      */
 
-    private function mapPatient($site_id, $patient_details, $patient_id = null, $revision = null)
+    private function mapPatient($site_id, $patient_details, $studies=null, $procedures=null, $emergency_contacts=null, $patient_id = null, $revision = null )
     {
         $patient_information = ['patientId', 'externalId', 'birthDate', 'doNotCall', 'doNotEmail', 'doNotText', 'status', 'notes', 'gender', 'sex', 'dateCreated', 'lastUpdated', 'nin'];
         $patient_contact_information = ['firstName', 'middleName', 'lastName', 'address1', 'address2', 'email', 'homePhone', 'cellPhone', 'workPhone', 'state', 'city', 'postalCode', 'countryCode'];
@@ -302,11 +368,20 @@ class Crio extends CrioServiceProvider
         if (!empty($patient_id)) {
             $patient['patientId'] = $patient_id;
         }
+        if(!empty($procedures)){
+            $patient['procedures']=$procedures;
+        }
+        if(!empty($emergency_contacts)){
+            $patient['emergencyContacts']=$emergency_contacts;
+        }
         $final_data = [
             'revision' => $revision,
             'siteId' => $site_id,
             'patientInfo' => $patient
         ];
+        if(!empty($studies)){
+            $final_data['studies']=$studies;
+        }
         return $final_data;
     }
 }
