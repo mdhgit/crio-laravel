@@ -229,6 +229,7 @@ class Crio extends CrioServiceProvider
                     $counter=0;
                     foreach($head['records'] as &$row){
                         foreach($mandatory_fields as $mandatory){
+                            $row=(array)$row;
                             if(!array_key_exists($mandatory,$row)){
                                 unset($row[$counter]);
                             }
@@ -325,13 +326,8 @@ class Crio extends CrioServiceProvider
         $procedures=[];
         foreach($procedures_list as $row){
             foreach($row['records'] as $procedure){
-               // if(!array_key_exists($procedure['procedureKey'],$procedures)){
-                //    $procedures[$procedure['procedureKey']]=array();
-               // }
-              //  else{
-                   // if(array_key_exists('records',$procedures[$procedure['procedureKey']]))
+                    $procedure=(array)$procedure;
                     $procedures[$procedure['procedureKey']]['records'][]['questions'][]=array('questionKey'=>$procedure['questionKey'],'value'=>$procedure['value']);
-               // }
             }
         }
         $final_procedure=array();
