@@ -359,7 +359,7 @@ class Crio extends CrioServiceProvider
         foreach ($procedures_list as $row) {
             foreach ($row['records'] as $procedure) {
                 $procedure = (array)$procedure;
-                $procedures[$procedure['procedureKey']]['records'][]['questions'][] = array('questionKey' => $procedure['questionKey'], 'value' => $procedure['value']);
+                $procedures[$procedure['procedureKey']]['records'][0]['questions'][] = array('questionKey' => $procedure['questionKey'], 'value' => $procedure['value']);
             }
         }
         $final_procedure = array();
