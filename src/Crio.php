@@ -257,12 +257,19 @@ class Crio extends CrioServiceProvider
                     $procedures[$procedure->procedureKey] = array();
                 }
                 if (!empty($procedure->records)) {
+                    $total_records = count($procedure->records);
+                    $record_counter = 0;
                     foreach ($procedure->records  as $record) {
                         if (!empty($record->questions)) {
                             foreach ($record->questions as $question) {
-                                $procedures[$procedure->procedureKey][] = ['questionKey' => $question->questionKey, 'value' => $question->value];
+                                if ($total_records == 1) {
+                                    $procedures[$procedure->procedureKey][] = ['questionKey' => $question->questionKey, 'value' => $question->value];
+                                } else {
+                                    $procedures[$procedure->procedureKey][$record_counter][] = ['questionKey' => $question->questionKey, 'value' => $question->value];
+                                }
                             }
                         }
+                        $record_counter++;
                     }
                 } else {
                     unset($procedures[$procedure->procedureKey]);
@@ -271,8 +278,20 @@ class Crio extends CrioServiceProvider
         }
         if (!empty($procedures)) {
             foreach ($procedures as $key => $row) {
-                foreach ($row as $question) {
-                    $final_procedures[] = ['procedureKey' => $key, 'questionKey' => $question['questionKey'], 'value' => $question['value']];
+                if (!empty(array_first($row))) {
+                    if (count(array_first($row)) == count(array_first($row), COUNT_RECURSIVE)) {
+                        foreach ($row as $question) {
+                            $final_procedures[$key][$question['questionKey']] = ['procedureKey' => $key, 'questionKey' => $question['questionKey'], 'value' => $question['value']];
+                        }
+                    } else {
+                        $counter = 0;
+                        foreach ($row as $column) {
+                            foreach ($column as $question) {
+                                $final_procedures[$key][$counter][] = ['procedureKey' => $key, 'questionKey' => $question['questionKey'], 'value' => $question['value']];
+                            }
+                            $counter++;
+                        }
+                    }
                 }
             }
         }
