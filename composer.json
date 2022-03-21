@@ -2,7 +2,7 @@
     "name": "mydiabeteshome/crio-laravel",
     "description": "Package made specially to integrate CRIO API(s) with Laravel PHP",
     "license": "MIT",
-    "version":"1.4.4",
+    "version":"1.4.5",
     "minimum-stability": "dev",
     "authors": [
         {

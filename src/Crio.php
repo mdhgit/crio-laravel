@@ -34,6 +34,9 @@ class Crio extends CrioServiceProvider
         $this->client_id = $client_id;
         $this->bearer_token = $bearer_token;
         switch ($mode) {
+            case 'production':
+                $this->api_url = 'https://api.clinicalresearch.io/api/v1';
+                break;
             case 'sandbox':
                 $this->api_url = 'https://recruitment-api.np.clinicalresearch.io/api/v1';
                 break;
